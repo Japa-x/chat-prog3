@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+   <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Chat</title>
+   </head>
+   <body>
+
+      
+      <div id="app">
+          
+         <div v-if="online == 0">
+            <h2>Olá, digite seu usuário: </h2>
+            <form @submit.prevent="nomeuser" class="form">
+               <input type="text" placeholder="Seu usuário" v-model:value="usuario">
+               <input type="submit" value="Entrar">
+            </form>
+         </div>
+
+         <div v-if="online == 1">
+            <div v-for="usuario in usuarios">
+               <form @submit.prevent="falar" class="form">
+                  <button type="submit"><input type="hidden" v-model:value="usuario">{{ usuario }}</button>
+               </form>
+            </div>
+            
+         </div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+      <script src="/socket.io/socket.io.js"></script>
+      <script>
+         var socket = null;
+         var app = new Vue({
+                el: '#app',
+                data: {
+                mensagem: '',
+                mensagens: [],
+                usuario: '',
+                usuarios: [],
+                online: 0,
+                state: 0,
+            },
+            methods: {
+                mandarmsg: function () {
+                socket.emit('mensagem', this.mensagem);
+                this.mensagem = '';
+            },
+            nomeuser: function() {
+                socket.emit('join', this.usuario);
+                this.online = 1;
+            },  
+            falar: function (userfinal) {
+               console.log(userfinal)
+               socket.emit('jointo', userfinal, this.usuarios)
+               this.state = 1;
+            },
+            },
+            created: function () {
+               socket = io();
+            }, 
+            mounted: function () {
+                socket.on('mensagem', function (mensagem){ 
+                    app.mensagens.push(mensagem)
+                    app.$nextTick(function () {
+                        var messageBox = document.getElementById('chatbox');
+                        messageBox.scrollTop = messageBox.scrollHeight;
+                    })
+                })
+
+                socket.on('users', function (usuarios){
+                   app.usuarios.push(usuarios)
+                })
+            }
+        }); 
+      </script>   
+   </body>
+</html>
